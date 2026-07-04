@@ -84,6 +84,13 @@ export default function TripLobby() {
     setIdentityModalOpen(false);
   };
 
+  const handleClearIdentity = async () => {
+    if (!window.confirm("Are you sure you want to change who you are in this trip?")) return;
+    await deleteDoc(doc(db, 'users', user.uid, 'tripIdentities', id));
+    setUserIdentity(null);
+    setIdentityModalOpen(true);
+  };
+
   // Derived state
   const balances = calculateBalances(members, expenses);
   const transactions = calculateTransactions(members, expenses);
@@ -293,7 +300,15 @@ export default function TripLobby() {
           <Card className={`p-6 border-slate-700/50 ${myBalance > 0 ? 'bg-emerald-900/20' : myBalance < 0 ? 'bg-red-900/20' : 'bg-slate-800/40'}`}>
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
               <div>
-                <h3 className="text-lg font-medium text-slate-300">Welcome, {myIdentity.name}</h3>
+                <div className="flex items-center gap-3 mb-1">
+                  <h3 className="text-lg font-medium text-slate-300">Welcome, {myIdentity.name}</h3>
+                  <button 
+                    onClick={handleClearIdentity}
+                    className="text-xs text-slate-500 hover:text-slate-300 underline transition-colors"
+                  >
+                    (Change)
+                  </button>
+                </div>
                 {myBalance === 0 ? (
                   <p className="text-2xl font-bold text-slate-400">You are completely settled up!</p>
                 ) : myBalance > 0 ? (
