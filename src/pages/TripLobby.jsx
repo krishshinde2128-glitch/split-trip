@@ -97,6 +97,22 @@ export default function TripLobby() {
   }, {});
   const sortedDays = Object.keys(groupedExpenses).sort((a, b) => b - a);
 
+  // Statistics
+  const validExpenses = expenses.filter(e => !e.isSettlement);
+  const totalSpent = validExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+  
+  const dayStats = {};
+  for (const day of sortedDays) {
+    const dayExps = groupedExpenses[day].filter(e => !e.isSettlement);
+    const dayTotal = dayExps.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const payers = {};
+    dayExps.forEach(e => {
+      const payerName = members.find(m => m.id === e.paidBy)?.name || 'Unknown';
+      payers[payerName] = (payers[payerName] || 0) + parseFloat(e.amount || 0);
+    });
+    dayStats[day] = { total: dayTotal, payers };
+  }
+
   // Action wrapper (checks host status first)
   const requireHost = (actionFn) => {
     if (isHost) {
@@ -257,7 +273,7 @@ export default function TripLobby() {
               )}
             </div>
             <p className="text-slate-400 text-sm mt-1">
-              {members.length} Members • {expenses.length} Expenses • Day {trip.currentDay || 1}
+              {members.length} Members • {expenses.length} Expenses • Total Spent: <span className="font-semibold text-slate-300">{trip.currency || '$'}{totalSpent.toFixed(2)}</span> • Day {trip.currentDay || 1}
             </p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
@@ -389,9 +405,21 @@ export default function TripLobby() {
                     
                     return (
                       <div key={`day-${day}`}>
-                        <div className="bg-slate-800/80 px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider sticky top-0 z-10 backdrop-blur-md flex justify-between items-center">
-                          <span>Day {day}</span>
-                          {dateString && <span className="text-[10px] font-medium text-slate-500 normal-case tracking-normal">{dateString}</span>}
+                        <div className="bg-slate-800/80 px-4 py-3 text-xs font-bold text-slate-400 tracking-wider sticky top-0 z-10 backdrop-blur-md flex flex-col gap-1 border-b border-slate-700/50">
+                          <div className="flex justify-between items-center uppercase">
+                            <span>Day {day}</span>
+                            {dateString && <span className="text-[10px] font-medium text-slate-500 normal-case tracking-normal">{dateString}</span>}
+                          </div>
+                          {dayStats[day]?.total > 0 && (
+                            <div className="flex justify-between items-start pt-1 text-[11px] normal-case tracking-normal">
+                              <span className="text-slate-300">Total: {trip.currency || '$'}{dayStats[day].total.toFixed(2)}</span>
+                              <div className="flex flex-col items-end gap-0.5 text-slate-500">
+                                {Object.entries(dayStats[day].payers).map(([name, amount]) => (
+                                  <span key={name}>{name}: {trip.currency || '$'}{amount.toFixed(2)}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="divide-y divide-slate-700/50">
                           {dayExpenses.map(exp => (
